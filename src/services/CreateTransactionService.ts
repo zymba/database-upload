@@ -1,5 +1,5 @@
 import { getRepository, getCustomRepository } from 'typeorm';
-// import AppError from '../errors/AppError';
+import AppError from '../errors/AppError';
 
 import TransactionsRepository from '../repositories/TransactionsRepository';
 import Transaction from '../models/Transaction';
@@ -22,23 +22,28 @@ class CreateTransactionService {
     const transactionsRepository = getCustomRepository(TransactionsRepository);
     const categoriesRepository = getRepository(Category);
 
-    let categoryExists = await categoriesRepository.findOne({
+    const { total } = await transactionsRepository.getBalance();
+
+    if (type === 'outcome' && total < value) {
+      throw new AppError('Saldo insuficiente');
+    }
+
+    let transactionCategory = await categoriesRepository.findOne({
       where: { title: category },
     });
 
-    if (!categoryExists) {
-      const newCategory = categoriesRepository.create({
+    if (!transactionCategory) {
+      transactionCategory = categoriesRepository.create({
         title: category,
       });
-      await categoriesRepository.save(newCategory);
-      categoryExists = newCategory;
+      await categoriesRepository.save(transactionCategory);
     }
 
     const transaction = transactionsRepository.create({
       title,
       value,
       type,
-      category_id: categoryExists.id,
+      category: transactionCategory,
     });
 
     await transactionsRepository.save(transaction);

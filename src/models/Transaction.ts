@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 
 import Category from './Category';
+import ColumnNumericTransformer from '../decorators/ColumnNumericTransformer';
 
 @Entity('transactions')
 class Transaction {
@@ -21,11 +22,17 @@ class Transaction {
   @Column()
   type: 'income' | 'outcome';
 
-  @Column()
+  @Column({
+    type: 'decimal',
+    transformer: new ColumnNumericTransformer(),
+  })
   value: number;
 
   @ManyToOne(() => Category)
   @JoinColumn({ name: 'category_id' })
+  category: Category;
+
+  @Column()
   category_id: string;
 
   @CreateDateColumn()
